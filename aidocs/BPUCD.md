@@ -1,126 +1,146 @@
 # Business Process and Use Case Document (BPUCD)
 
 ## Version History
-| Version | Date       | Author         | Changes                |
-|---------|------------|----------------|------------------------|
-| 1.0     | 2024-06-10 | AI Analyst     | Initial version        |
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0     | 2024-06-01 | AI Modernization Analyst | Initial version based on repository analysis |
 
 ## 1. Introduction
 ### 1.1 Purpose
-This document bridges technical analysis to business value for WebJET CMS, ensuring that modernization efforts preserve core functionality and enhance business outcomes.
+This document bridges technical analysis to business value for WebJET CMS, ensuring that modernization efforts preserve and enhance core business functionality. It provides a comprehensive mapping of business processes and use cases to the underlying codebase, supporting requirements traceability and future modernization.
 
 ### 1.2 Scope
-Covers core content management processes, user workflows, and system modules relevant to the open-source community version of WebJET CMS.
+Covers core content management processes, user-facing features, administrative workflows, and integration points within WebJET CMS open-source community edition.
 
 ### 1.3 Actors and Roles
-| Actor         | Role                                        |
-|---------------|---------------------------------------------|
-| Content Editor| Creates, edits, and manages website content |
-| Administrator | Manages users, site structure, and settings |
-| Visitor       | Browses and interacts with website content  |
-| Developer     | Extends/customizes CMS functionality        |
+| Actor         | Role                                                   |
+|---------------|--------------------------------------------------------|
+| Website Admin | Manages site structure, content, and user permissions |
+| Content Editor| Creates and edits web content                          |
+| End User      | Browses and interacts with published content           |
+| Developer     | Customizes, extends, and integrates CMS                |
+| System        | Performs automated tasks, monitoring, and security     |
 
 ## 2. Process Models
 ### 2.1 High-Level BPMN Diagrams
-Below is a high-level BPMN diagram representing the end-to-end process for content management in WebJET CMS:
+Below is a high-level BPMN diagram representing the end-to-end content management workflow in WebJET CMS:
 
-![BPMN](docs/bpmn/webjetcms-content-management.png)
+~~~mermaid
+flowchart TD
+    A[Login] --> B[Dashboard]
+    B --> C[Create/Edit Content]
+    C --> D[Preview]
+    D --> E[Publish]
+    E --> F[Content Available to End Users]
+    B --> G[Manage Site Structure]
+    B --> H[File Upload]
+    B --> I[Monitor Performance]
+    B --> J[Configure Applications]
+~~~
 
 ### 2.2 Detailed Use Cases
-
-**Use Case ID: UC-001: Create Web Page**  
-- **Preconditions**: User is authenticated as Content Editor or Administrator
+#### Use Case ID: UC-001 - Create/Edit Content
+- **Preconditions**: User is authenticated as Admin or Content Editor
 - **Steps**:
-  1. Navigate to "Create Page" in CMS dashboard
-  2. Enter page title, content, and metadata
-  3. Select parent node in site structure
-  4. Save page
-  5. Page appears in site tree and is accessible to visitors
-- **Postconditions**: New page is published and visible in site structure
+  1. Navigate to dashboard
+  2. Select 'Create Content' or 'Edit Content'
+  3. Enter or update content using WYSIWYG editor
+  4. Optionally attach files/images
+  5. Preview changes
+  6. Submit for publishing
+- **Postconditions**: Content is saved and available for publishing
 
-**Use Case ID: UC-002: Edit Web Page**  
-- **Preconditions**: Page exists; user has edit permissions
+#### Use Case ID: UC-002 - Publish Content
+- **Preconditions**: Content is created/edited and ready for publication
 - **Steps**:
-  1. Select page from site tree
-  2. Click "Edit"
-  3. Modify content and metadata
-  4. Save changes
-- **Postconditions**: Page is updated and changes are reflected to visitors
+  1. Select content for publishing
+  2. Review publishing options (schedule, immediate, etc.)
+  3. Confirm publish action
+- **Postconditions**: Content is visible to end users
 
-**Use Case ID: UC-003: Upload File**  
+#### Use Case ID: UC-003 - Manage Site Structure
+- **Preconditions**: User is authenticated as Admin
+- **Steps**:
+  1. Access site structure management
+  2. Add, remove, or rearrange pages in tree structure
+  3. Save changes
+- **Postconditions**: Site structure updated
+
+#### Use Case ID: UC-004 - Upload Files
 - **Preconditions**: User is authenticated
 - **Steps**:
-  1. Navigate to "Files" section
-  2. Drag and drop or select file to upload
-  3. File is stored and indexed
-- **Postconditions**: File is available for use in content or downloads
+  1. Select 'Upload File' option
+  2. Drag and drop or select files
+  3. Confirm upload
+- **Postconditions**: Files are available for use in content
 
-**Use Case ID: UC-004: Create Form/Survey**  
-- **Preconditions**: User is authenticated as Editor/Admin
+#### Use Case ID: UC-005 - Analyze Web Traffic
+- **Preconditions**: Site is live with visitor activity
 - **Steps**:
-  1. Navigate to "Forms & Surveys"
-  2. Select "Create New"
-  3. Define fields and options
-  4. Save and publish form
-- **Postconditions**: Form is available for visitor input
+  1. Access performance monitoring tools
+  2. View analytics dashboard
+  3. Export or review reports
+- **Postconditions**: Performance insights available
 
-**Use Case ID: UC-005: Analyze Web Traffic**  
-- **Preconditions**: Site is live; data is being collected
+#### Use Case ID: UC-006 - Manage Contacts (API)
+- **Preconditions**: User has permission 'cmp_contact'
 - **Steps**:
-  1. Access "Statistics" dashboard
-  2. Select desired metrics (visits, page views, etc.)
-  3. View or export reports
-- **Postconditions**: Performance insights are available to administrators
+  1. Access /admin/rest/apps/contact/ endpoint
+  2. View, add, or update contact records
+  3. Save changes
+- **Postconditions**: Contact records updated
 
 ## 3. Mapping to Code
 ### 3.1 Process-to-Module Traceability
-| Process/Use Case          | Module/Component      | Trace ID |
-|--------------------------|----------------------|----------|
-| Create/Edit Web Page      | web/pages, web/tree  | UC-001/002|
-| Upload File               | web/files            | UC-003   |
-| Create Form/Survey        | web/forms, web/survey| UC-004   |
-| Analyze Web Traffic       | web/statistics       | UC-005   |
+| Process/Use Case        | Module/Component                                  | Trace ID |
+|------------------------|---------------------------------------------------|----------|
+| Create/Edit Content    | src/main/java/sk/iway/basecms                     | UC-001   |
+| Publish Content        | src/main/java/sk/iway/basecms                     | UC-002   |
+| Manage Site Structure  | src/main/java/sk/iway/basecms                     | UC-003   |
+| Upload Files           | src/main/java/sk/iway/basecms                     | UC-004   |
+| Analyze Web Traffic    | src/main/java/sk/iway/basecms                     | UC-005   |
+| Manage Contacts (API)  | src/main/java/sk/iway/basecms/contact/ContactRestController.java | UC-006   |
 
 ### 3.2 Pain Points
-- Batch jobs for statistics may delay real-time insights
-- Large file uploads may impact performance
-- Site structure changes require manual updates to navigation
-- Customization requires developer intervention for advanced features
+- Legacy batch jobs may cause delays in publishing
+- Manual site structure management can be error-prone
+- Limited real-time collaboration features
+- Integration with external applications may require custom development
 
 ## 4. Modernization Impacts
 ### 4.1 Gaps
-- Lack of real-time analytics dashboard
-- Limited drag-and-drop support in some modules
-- No built-in workflow for content approval
-- API coverage for headless CMS use is incomplete
+- Lack of real-time editing/collaboration
+- Limited REST API coverage for all CMS features
+- UI/UX modernization needed for admin dashboard
+- Automated testing coverage is limited
 
 ### 4.2 Prioritization (MoSCoW)
-| Item                        | MoSCoW | Rationale                                |
-|-----------------------------|--------|------------------------------------------|
-| Real-time analytics         | Must   | Critical for business decision-making     |
-| Content approval workflow   | Should | Enhances governance and quality control  |
-| Improved drag-and-drop      | Could  | Improves editor productivity             |
-| Full REST API coverage      | Must   | Enables integration and modernization    |
-| Automated navigation update | Should | Reduces manual effort                    |
+| Item                         | MoSCoW | Rationale                         |
+|------------------------------|--------|-----------------------------------|
+| Real-time collaboration      | Should | Improves productivity             |
+| Full REST API coverage       | Must   | Enables integration/automation    |
+| Modern UI/UX for dashboard   | Should | Enhances user experience          |
+| Automated testing            | Must   | Ensures reliability               |
+| Batch job optimization       | Could  | Reduces delays                    |
 
 ## 5. Appendices
 ### A. Process Narratives
-**Content Creation and Publishing**: Editors log in, create content using a WYSIWYG editor, assign it to a site section, and publish. Administrators oversee structure and permissions. Visitors browse published content.
-
-**File Management**: Users upload files for use in content or downloads. Files are indexed and managed via the CMS interface.
-
-**Forms and Surveys**: Editors create forms for feedback, surveys, or data collection. Results are stored and analyzed by administrators.
-
-**Statistics and Monitoring**: Administrators review site performance using built-in analytics tools. Reports inform site improvements and content strategy.
+- **Content Creation/Editing**: Users log in, access the dashboard, and use the WYSIWYG editor to create or update content. Files and images can be attached. Preview and publishing are available.
+- **Site Structure Management**: Admins organize the site using a tree structure, adding or removing pages as needed.
+- **File Upload**: Drag-and-drop interface allows easy file management.
+- **Web Traffic Analysis**: Analytics dashboard provides insight into visitor activity and site performance.
+- **Contact Management API**: RESTful endpoint at /admin/rest/apps/contact/ allows CRUD operations on contact records, secured by permissions.
 
 ### B. RTM to SORD
-| Requirement (RTM)          | SORD Reference         |
-|----------------------------|------------------------|
-| Page creation/editing      | SORD-01                |
-| File management            | SORD-02                |
-| Form/survey functionality  | SORD-03                |
-| Analytics/statistics       | SORD-04                |
+| Requirement (SORD Ref) | Use Case | Module | Trace ID |
+|------------------------|----------|--------|----------|
+| SORD-001               | UC-001   | basecms| UC-001   |
+| SORD-002               | UC-002   | basecms| UC-002   |
+| SORD-003               | UC-003   | basecms| UC-003   |
+| SORD-004               | UC-004   | basecms| UC-004   |
+| SORD-005               | UC-005   | basecms| UC-005   |
+| SORD-006               | UC-006   | contact/ContactRestController.java | UC-006   |
 
 **Standards Alignment**: ISO/IEC/IEEE 29148:2011 (Requirements engineering), BPMN 2.0.2.
 
-**Traceability**: See SORD, CIAR, and architecture docs for further mapping.
+**Traceability**: See SORD and CIAR documents for full requirements mapping.
