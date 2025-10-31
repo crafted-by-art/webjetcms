@@ -3,219 +3,208 @@
 ## Version History
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0     | 2024-06-11 | AI Modernization Architect | Initial version for webjetcms |
+| 1.0     | 2024-05-31 | AI Microservices Architect | Initial version: synthesized from SORD, CIAR, ADD, DMFD, BPUCD, RGAR |
 
 ## 1. Introduction
-
 ### 1.1 Purpose and Scope
-This document provides a comprehensive guide for decomposing the monolithic `webjetcms` platform into a set of loosely coupled, domain-aligned microservices. The target is to extract 8-15 core services from the current codebase, focusing on business-critical and high-change domains first, while minimizing risk and ensuring business continuity.
+This guide provides a comprehensive roadmap for decomposing the WebjetCMS monolith into microservices. Target outcome: migration from a legacy Java monolith (~1M LOC) to a modular, cloud-native architecture with 10–20 core services in the first phase, scaling up to 50+ as business domains mature.
 
 ### 1.2 Prerequisites
 - Modernization Discovery Summary (MDS)
-- SORD: System overview and requirements
-- CIAR: Code inventory and analysis
-- ADD: Architecture description
-- DMFD: Data model and flows
-- BPUCD: Business processes and use cases
-- RGAR: Risk and gap analysis
+- Architecture Decision Records (ADRs)
+- Access to legacy codebase and business process documentation
+- Stakeholder alignment on DDD principles
 
 ### 1.3 Decomposition Principles
-- **Single Responsibility Principle**: Each service owns a distinct business capability.
-- **Bounded Contexts**: Services map to clear DDD boundaries.
-- **Loose Coupling**: Minimize inter-service dependencies.
-- **Conway’s Law**: Align service boundaries with team structures.
-- **Incremental Extraction**: Use Strangler Fig and anti-corruption patterns.
-- **Database-per-Service**: Each service owns its data.
+- Single Responsibility Principle
+- Bounded Contexts (DDD)
+- Loose Coupling (Conway's Law)
+- API-first design
+- Database-per-service
+- Event-driven communication
+- Incremental migration (Strangler Fig)
 
 ### 1.4 Tools
-- Structurizr for modeling
+- Structurizr (architecture modeling)
 - EventStorming workshops
 - OpenAPI/Swagger for API contracts
-- Kafka/RabbitMQ for event-driven integration
+- Kafka/RabbitMQ for event flows
+- CI/CD pipeline (Jenkins/GitHub Actions)
 
 ## 2. Domain Analysis
-
 ### 2.1 Ubiquitous Language Glossary
-
-| Term         | Definition                                      |
-|--------------|-------------------------------------------------|
-| Contact      | An entity representing a person or organization |
-| CMS          | Content Management System                       |
-| Page         | A managed web page                              |
-| User         | Platform user                                   |
-| Workflow     | Approval and publishing process                 |
-| Asset        | Uploaded file or media                          |
-| Template     | Page layout definition                          |
+| Term | Definition |
+|------|------------|
+| Page | Content entity managed by CMS |
+| Widget | Reusable UI component |
+| User | Authenticated system actor |
+| Role | Permission grouping |
+| Workflow | Sequence of approval steps |
+| Asset | Managed file or image |
+| Template | Layout definition |
+| Publication | Content release event |
+| Audit | Change tracking record |
+| Tag | Content categorization |
 
 ### 2.2 Bounded Contexts Identification
-
-| Context Name | Core Domains                                    |
-|--------------|-------------------------------------------------|
-| BaseCMS      | Contacts, Content, CRUD, Templates              |
-| Webjet       | Page management, Publishing, Workflow           |
-| IWCM         | User management, Authentication, Permissions    |
-| Spirit       | Asset management, File uploads                  |
-| Demo8        | Demo/sample modules                             |
+| Context Name | Core Domains |
+|--------------|--------------|
+| Content Management | Pages, Assets, Templates |
+| User & Access | Users, Roles, Audit |
+| Workflow | Workflow, Publication |
+| UI/Presentation | Widgets, Templates |
+| Tagging & Search | Tags, Search |
 
 ### 2.3 Subdomain Mapping
-
-| Subdomain    | Type        | Business Value Priority            |
-|--------------|------------|------------------------------------|
-| Contacts     | Core        | High                               |
-| Pages        | Core        | High                               |
-| Users        | Supporting  | Medium                             |
-| Assets       | Supporting  | Medium                             |
-| Templates    | Generic     | Low                                |
+| Subdomain | Type | Business Value |
+|-----------|------|---------------|
+| Content Management | Core | High |
+| User & Access | Core | High |
+| Workflow | Supporting | Medium |
+| UI/Presentation | Supporting | Medium |
+| Tagging & Search | Generic | Low |
 
 ## 3. Service Decomposition
-
 ### 3.1 Candidate Services Inventory
-
-| Service Name         | LOC Extracted | Dependencies                        |
-|----------------------|--------------|-------------------------------------|
-| Contact Service      | 3,000        | Spring Data JPA, REST, BaseCMS      |
-| Page Service         | 4,500        | Webjet, Templates, Workflow         |
-| User Service         | 2,500        | IWCM, Security, Permissions         |
-| Asset Service        | 2,000        | Spirit, File Storage                |
-| Template Service     | 1,000        | BaseCMS, Page Service               |
+| Service Name | LOC Extracted | Dependencies |
+|--------------|---------------|--------------|
+| content-service | ~120K | asset-service, template-service |
+| asset-service | ~40K | content-service |
+| user-service | ~80K | role-service, audit-service |
+| role-service | ~20K | user-service |
+| workflow-service | ~30K | content-service, publication-service |
+| publication-service | ~15K | workflow-service |
+| audit-service | ~10K | user-service, content-service |
+| tag-service | ~8K | content-service |
+| search-service | ~12K | tag-service |
+| widget-service | ~18K | content-service, template-service |
 
 ### 3.2 Boundary Definition
+Boundaries are defined by DDD context maps:
+- Each service encapsulates its own domain logic and data.
+- Anti-corruption layers will be implemented for legacy integration during migration.
+- Example UML context map:
 
-- **Contact Service**: Owns all contact CRUD, validation, and search logic.
-- **Page Service**: Manages page lifecycle, publishing, and workflow.
-- **User Service**: Handles authentication, roles, and permissions.
-- **Asset Service**: Responsible for file upload, storage, and retrieval.
-- **Template Service**: Manages page templates and layouts.
-
-**UML Context Map (Mermaid):**
-```mermaid
-graph TD
-  ContactService -->|uses| UserService
-  PageService -->|uses| UserService
-  PageService -->|uses| TemplateService
-  PageService -->|uses| AssetService
-  AssetService -->|uses| UserService
-```
+~~~mermaid
+flowchart TD
+  ContentService -->|uses| AssetService
+  ContentService -->|uses| TemplateService
+  UserService -->|uses| RoleService
+  UserService -->|uses| AuditService
+  WorkflowService -->|uses| ContentService
+  WorkflowService -->|uses| PublicationService
+~~~
 
 ### 3.3 Patterns Applied
-
-| Pattern         | Rationale                                 | Application                        |
-|-----------------|-------------------------------------------|------------------------------------|
-| Strangler Fig   | Incremental migration, low risk           | Extract Contact/Asset first        |
-| Anti-Corruption | Shield legacy modules                     | Adapters for legacy CMS features   |
-| Database-per-Service | Decouple data, enable scaling        | Each service owns its schema       |
+| Pattern | Rationale | Application |
+|---------|-----------|-------------|
+| Strangler Fig | Incremental extraction, minimize risk | Legacy endpoints proxied to new services |
+| Anti-Corruption Layer | Protect new domains from legacy pollution | Adapters at service boundaries |
+| CQRS/ES | Event-driven consistency | Applied to audit and workflow domains |
 
 ## 4. Data and Integration Strategy
-
 ### 4.1 Database-per-Service
-
-- Each microservice will have its own schema/database.
-- Eventual consistency managed via events (Kafka/RabbitMQ).
-- CQRS pattern for read/write separation where needed.
+- Each microservice owns its database schema (PostgreSQL recommended).
+- Eventual consistency managed via domain events (Kafka).
+- Legacy DB read-only adapters during migration.
 
 ### 4.2 API Contracts
-
-- RESTful APIs, documented via OpenAPI/Swagger.
-- Internal APIs versioned and backward compatible.
+- RESTful APIs, OpenAPI 3.0 specs per service
+- Example contract: /content/{id}, /user/{id}, /asset/{id}
+- Versioned endpoints for backward compatibility
 
 ### 4.3 Event-Driven Flows
-
-- Domain events (e.g., ContactCreated, PagePublished) published to Kafka.
-- Services subscribe to relevant events for eventual consistency.
+- Kafka topics for domain events: content.created, user.updated, asset.uploaded
+- RabbitMQ for workflow orchestration
+- Event schemas documented in AsyncAPI
 
 ## 5. Migration Roadmap
-
 ### 5.1 Phasing
+- **Wave 1:** Extract low-risk CRUD services (asset, tag, audit)
+- **Wave 2:** Migrate core domains (content, user, role)
+- **Wave 3:** Integrate workflow and publication
+- **Wave 4:** UI/presentation and search
 
-**Wave 1:**  
-- Extract Contact and Asset services (low-risk, CRUD-heavy).
-- Introduce API Gateway for routing.
-
-**Wave 2:**  
-- Extract User and Template services.
-- Implement event-driven integration.
-
-**Wave 3:**  
-- Extract Page service (complex workflows).
-- Decommission monolith modules.
-
-**Gantt Chart (Mermaid):**
-```mermaid
+~~~mermaid
 gantt
-  title Microservices Migration Waves
-  dateFormat  YYYY-MM-DD
-  section Wave 1
-  Contact Service      :done, 2024-06-15, 14d
-  Asset Service        :done, 2024-06-15, 14d
-  section Wave 2
-  User Service         :active, 2024-07-01, 14d
-  Template Service     :active, 2024-07-01, 14d
-  section Wave 3
-  Page Service         :2024-07-15, 21d
-  Monolith Decom.      :2024-08-05, 14d
-```
+    title Migration Roadmap
+    dateFormat  YYYY-MM-DD
+    section Wave 1
+    Asset Service    :a1, 2024-06-01, 30d
+    Tag Service      :a2, after a1, 20d
+    Audit Service    :a3, after a2, 15d
+    section Wave 2
+    Content Service  :b1, after a3, 45d
+    User Service     :b2, after b1, 40d
+    Role Service     :b3, after b2, 20d
+    section Wave 3
+    Workflow Service :c1, after b3, 30d
+    Publication Service :c2, after c1, 20d
+    section Wave 4
+    Widget Service   :d1, after c2, 30d
+    Search Service   :d2, after d1, 25d
+~~~
 
 ### 5.2 Testing and Deployment
-
-- Contract testing for all APIs.
-- CI/CD pipelines for each service.
-- Canary releases for risk mitigation.
+- Contract testing (Pact)
+- CI/CD pipelines (GitHub Actions)
+- Canary deployments for new services
 
 ### 5.3 Metrics for Success
-
-| Metric                | Target                                  |
-|-----------------------|-----------------------------------------|
-| Deployment Frequency  | Weekly per service                      |
-| MTTR                  | < 1 hour                                |
-| Lead Time for Change  | < 1 day                                 |
-| Service Uptime        | 99.9%                                   |
+| Metric | Target |
+|--------|--------|
+| Deployment Frequency | >2/week |
+| MTTR | <2 hours |
+| Service Lead Time | <1 week |
+| Defect Rate | <2% |
 
 ## 6. Risks and Governance
-
 ### 6.1 Decomposition Risks
-
-| Risk                        | Mitigation Strategy                        |
-|-----------------------------|--------------------------------------------|
-| Distributed transactions    | Eventual consistency, Sagas               |
-| Data duplication            | Clear ownership, sync via events           |
-| Legacy integration          | Anti-corruption layers, adapters           |
-| Team skill gaps             | Training, pair programming                 |
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Distributed transactions | High | Saga pattern, eventual consistency |
+| Data duplication | Medium | Data contracts, event sourcing |
+| Legacy integration | High | Anti-corruption layers |
+| Service sprawl | Medium | Governance, ADRs |
+| Ownership ambiguity | Medium | Service ownership matrix |
 
 ### 6.2 Service Ownership Matrix
-
-| Service/Context    | Owner Team        | Responsibilities                    |
-|--------------------|------------------|-------------------------------------|
-| Contact Service    | CMS Team         | CRUD, API, Data Consistency         |
-| Page Service       | Webjet Team      | Workflow, Publishing, API           |
-| User Service       | Platform Team    | Auth, Permissions, Security         |
-| Asset Service      | CMS Team         | File Storage, API                   |
-| Template Service   | CMS Team         | Template CRUD, API                  |
+| Service/Context | Owner Team | Responsibilities |
+|-----------------|------------|------------------|
+| content-service | Content Team | CRUD, publishing |
+| asset-service | Asset Team | File management |
+| user-service | IAM Team | Authentication, user CRUD |
+| role-service | IAM Team | Role CRUD |
+| workflow-service | Workflow Team | Orchestration |
+| audit-service | Security Team | Change tracking |
+| tag-service | Content Team | Tagging |
+| search-service | Search Team | Indexing, querying |
+| widget-service | UI Team | Widget CRUD |
 
 ### 6.3 Review Cadence
-
-- Quarterly architecture reviews using fitness functions.
-- Bi-weekly service health checks.
+- Quarterly architecture fitness reviews
+- Monthly service ownership check-ins
 
 ## 7. Appendices
-
 ### A. Workshop Outputs
-
-- EventStorming outputs digitized (see docs/ for details).
+- EventStorming sticky notes digitized (see docs/)
 
 ### B. Prototype Examples
-
-- Contact Service PoC: [aidocs/ContactServicePoC.md](../aidocs/ContactServicePoC.md)
+- asset-service PoC (see aidocs/asset-service-poc.md)
 
 ### C. Traceability to MDS
-
-| Service         | Source Module (CIAR)           |
-|-----------------|-------------------------------|
-| Contact Service | sk.iway.basecms.contact       |
-| Page Service    | sk.iway.webjet                |
-| User Service    | sk.iway.iwcm                  |
-| Asset Service   | sk.iway.spirit                |
-| Template Service| sk.iway.basecms               |
+| Service | Module (CIAR) |
+|---------|---------------|
+| content-service | sk.iway.webjet |
+| asset-service | sk.iway.basecms |
+| user-service | sk.iway.iwcm |
+| role-service | sk.iway.iwcm |
+| workflow-service | sk.iway.webjet.workflow |
+| audit-service | sk.iway.audit |
+| tag-service | sk.iway.webjet |
+| search-service | sk.iway.webjet |
+| widget-service | sk.iway.webjet |
 
 **Standards Alignment**: DDD (Ubiquitous Language, Bounded Contexts), ISO/IEC 42010:2011 (views for service architecture), UML 2.5.1 for service diagrams.
 
-**Traceability**: See SORD, CIAR, ADD, DMFD, BPUCD, RGAR in aidocs/.
+**Traceability**: See docs/MDS.md, docs/CIAR.md, docs/ADD.md, docs/DMFD.md, docs/BPUCD.md, docs/RGAR.md
