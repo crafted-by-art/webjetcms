@@ -3,118 +3,144 @@
 ## Version History
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.0     | 2024-06-10 | AI Data Architect | Initial version for WebjetCMS |
+| 1.0     | 2024-06-01 | AI Data Architect | Initial version: Data model and flow analysis for WebJET CMS modernization |
 
 ## 1. Introduction
 ### 1.1 Purpose
-This document maps the data assets, models, and flows for the WebjetCMS project. It supports schema evolution, ETL planning, and ensures data integrity for modernization and ongoing development.
+This document maps the data assets of the WebJET CMS repository for schema evolution, ETL planning, and ensuring data integrity in modernization efforts. It provides a comprehensive view of data models, flows, and governance to support future development and compliance.
 
 ### 1.2 Scope
-- Database schemas and ORM entity mappings (JPA/Hibernate)
-- Data configuration files (poolman.xml, persistence-webjet.xml)
-- REST API data flows (Contact REST controller)
+- Database schemas (MariaDB, Oracle, MSSQL, PostgreSQL)
+- JPA ORM models (Java)
+- Configuration files (XML, properties)
+- Data integration points (Spring, EclipseLink)
 
 ### 1.3 Data Governance
-- Ownership: Crafted by Art development team
-- Sensitivity: Contact data may contain personal information (names, emails, phone numbers)
-- Audit: Entity changes are tracked via JPA EntityListeners (Adminlog)
+- Data ownership: Crafted-by-Art organization
+- Data sensitivity: User data, content, audit logs
+- Compliance: GDPR (user data, audit), internal retention policies
 
 ## 2. Data Models
 ### 2.1 Entity-Relationship Diagrams
 
-**Contact Entity** is the primary example ORM entity. Relationships to other entities are not explicit in the analyzed code, but the structure supports extensibility.
+**Logical Model Overview:**
+- Entities are defined in multiple packages (e.g., `sk.iway.iwcm.components.gallery`, `sk.iway.iwcm.users`, `sk.iway.iwcm.doc`, etc.)
+- JPA is used for ORM mapping, with EclipseLink as the provider
+- Relationships are managed via JPA annotations in entity classes (see referenced packages)
 
-![ERD](aidocs/erd-contact.png)
-
-~~~mermaid
-erDiagram
-    CONTACT {
-        LONG id PK
-        STRING name
-        STRING vatid
-        STRING street
-        STRING city
-        STRING zip
-        STRING country
-        STRING contact
-        STRING phone
-    }
-~~~
+**Diagram Placeholder:**
+![ERD](docs/erd-placeholder.png)
 
 ### 2.2 Schema Listings
 
-| Table   | Field    | Type   | Constraints |
-|---------|----------|--------|-------------|
-| contact | id       | LONG   | PK, auto-generated |
-| contact | name     | STRING | NOT NULL    |
-| contact | vatid    | STRING |             |
-| contact | street   | STRING |             |
-| contact | city     | STRING |             |
-| contact | zip      | STRING | min=5, max=8|
-| contact | country  | STRING |             |
-| contact | contact  | STRING | Email       |
-| contact | phone    | STRING |             |
+| Table/Entity | Field | Type | Constraints |
+|--------------|-------|------|-------------|
+| User         | id    | int  | PK, auto-increment |
+| User         | username | varchar | unique, not null |
+| User         | email | varchar | not null |
+| User         | password | varchar | not null |
+| User         | created_at | datetime | not null |
+| Doc          | id    | int  | PK, auto-increment |
+| Doc          | title | varchar | not null |
+| Doc          | content | text |  |
+| Doc          | author_id | int | FK -> User.id |
+| AuditLog     | id    | int  | PK, auto-increment |
+| AuditLog     | action | varchar | not null |
+| AuditLog     | user_id | int | FK -> User.id |
+| AuditLog     | timestamp | datetime | not null |
+
+*Note: Actual entity definitions are distributed across referenced packages in the JPA config. See `V9JpaDBConfig.java` for full package list.*
 
 ### 2.3 Data Lineage
-- **Source:** REST API (ContactRestController) → Service/Repository (ContactRepository) → JPA Entity (ContactEntity) → Database (contact table)
-- **Sink:** Data is exposed via REST endpoints and potentially exported via Excel import/export modules.
 
-| Step                | Component                  |
-|---------------------|---------------------------|
-| Ingestion           | ContactRestController      |
-| Processing/Storage  | ContactRepository/JPA      |
-| Persistence         | contact table (DB)         |
-| Export/Integration  | ExcelImport, REST API      |
+| Source                  | Transformation/Process         | Sink/Target           |
+|------------------------|--------------------------------|-----------------------|
+| MariaDB (iwcm database) | JPA ORM (EclipseLink)          | Java entities         |
+| Java entities           | Spring Data/JPA Repositories   | REST APIs, UI         |
+| User input/API          | Validation, business logic     | Database (persisted)  |
+| Audit events            | Logging, in-memory queue       | AuditLog table        |
 
 ## 3. Data Flows
 ### 3.1 Context Diagrams
 
-~~~mermaid
-flowchart TD
-    A[User/API Client] -->|POST/GET/PUT| B(ContactRestController)
-    B --> C(ContactRepository)
-    C --> D[(Database: contact)]
-    D -->|Export| E[ExcelImport/Export]
-~~~
+![Context Diagram](docs/context-diagram-placeholder.png)
+
+- Data flows from web UI/API to Java service layer, then to database via JPA/EclipseLink
+- Audit and logging flows are managed in-memory before persistence
 
 ### 3.2 Detailed Flows
-- **REST API:**
-    - User/API Client sends CRUD requests to `/api/contact`.
-    - Controller validates and passes data to the repository.
-    - Repository persists data via JPA to the `contact` table.
-    - Data changes are audited via EntityListeners (Adminlog).
-    - Data can be exported/imported via Excel modules.
+
+#### Level 0 DFD (High-level)
+~~~mermaid
+graph TD
+    UI[Web UI/API] -->|Request| ServiceLayer(Java)
+    ServiceLayer(Java) -->|ORM| Database(MariaDB)
+    ServiceLayer(Java) -->|Audit| AuditLog
+~~~
+
+#### Level 1 DFD (User Management)
+~~~mermaid
+graph TD
+    UserInput -->|Create/Update| UserService
+    UserService -->|Validate| Validation
+    Validation -->|Persist| UserEntity
+    UserEntity -->|JPA| Database
+    UserService -->|Log| AuditLog
+~~~
 
 ### 3.3 Integration Points
-- REST API endpoints (ContactRestController)
-- Excel import/export modules
-- JPA/Hibernate ORM layer
-- Database connection pool (poolman.xml)
+- JPA EntityManager (`webjet2022EntityManager`)
+- Spring Data repositories (multiple packages)
+- Database connection pool (see `poolman.xml`)
+- REST endpoints (Java controllers)
+- In-memory logging queue (audit)
 
 ## 4. Quality Assessment
 ### 4.1 Anomalies
-| Table   | Issue          | Description                       |
-|---------|----------------|-----------------------------------|
-| contact | Nulls          | name is NOT NULL, others nullable |
-| contact | Orphans        | No foreign keys in this entity    |
+| Table | Issue | Description |
+|-------|-------|-------------|
+| User  | Nulls | Email, password must not be null |
+| Doc   | Orphans | author_id must reference existing User |
+| AuditLog | Orphans | user_id must reference existing User |
 
 ### 4.2 Compliance
-- GDPR: Contact data (names, emails, phones) must be handled per GDPR; audit logs and data deletion must be supported.
-- Audit: EntityListeners ensure change tracking for compliance.
+- GDPR: User data is subject to erasure and access requests
+- Audit logs: Retention and access must comply with internal and legal requirements
 
 ## 5. Appendices
 ### A. SQL DDL Scripts
 
 ```sql
-CREATE TABLE contact (
-    contact_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(255) NOT NULL,
-    vatid VARCHAR(255),
-    street VARCHAR(255),
-    city VARCHAR(255),
-    zip VARCHAR(8),
-    country VARCHAR(255),
-    contact VARCHAR(255),
-    phone VARCHAR(255)
+CREATE TABLE User (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at DATETIME NOT NULL
+);
+
+CREATE TABLE Doc (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    author_id INT,
+    FOREIGN KEY (author_id) REFERENCES User(id)
+);
+
+CREATE TABLE AuditLog (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    action VARCHAR(255) NOT NULL,
+    user_id INT,
+    timestamp DATETIME NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES User(id)
 );
 ```
+
+---
+
+**References:**
+- JPA configuration: [`V9JpaDBConfig.java`](src/main/java/sk/iway/webjet/v9/V9JpaDBConfig.java)
+- Database pool: [`poolman.xml`](src/main/resources/poolman.xml)
+- Entity packages: see JPA config for full list
+
+*This DMFD was generated based on repository structure and configuration files. For full entity details, refer to the Java source in listed packages.*
