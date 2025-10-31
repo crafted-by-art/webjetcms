@@ -1,126 +1,135 @@
 # Business Process and Use Case Document (BPUCD)
 
 ## Version History
-| Version | Date       | Author         | Changes                |
-|---------|------------|----------------|------------------------|
-| 1.0     | 2024-06-10 | AI Analyst     | Initial version        |
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0     | 2024-06-01 | AI Modernization Analyst | Initial version for WebJET CMS |
 
 ## 1. Introduction
 ### 1.1 Purpose
-This document bridges technical analysis to business value for WebJET CMS, ensuring that modernization efforts preserve core functionality and enhance business outcomes.
+This document bridges technical analysis to business value, ensuring modernization of WebJET CMS preserves and enhances core business functionality, user experience, and operational efficiency.
 
 ### 1.2 Scope
-Covers core content management processes, user workflows, and system modules relevant to the open-source community version of WebJET CMS.
+Covers core business processes for content management, administration, user management, and integration workflows within WebJET CMS.
 
 ### 1.3 Actors and Roles
-| Actor         | Role                                        |
-|---------------|---------------------------------------------|
-| Content Editor| Creates, edits, and manages website content |
-| Administrator | Manages users, site structure, and settings |
-| Visitor       | Browses and interacts with website content  |
-| Developer     | Extends/customizes CMS functionality        |
+| Actor         | Role                        |
+|---------------|-----------------------------|
+| Administrator | Manages site structure, users, and configuration |
+| Editor        | Creates and edits content    |
+| Viewer        | Consumes published content   |
+| Integrator    | Connects external apps/APIs |
+| System        | Executes automated jobs, security, and monitoring |
 
 ## 2. Process Models
 ### 2.1 High-Level BPMN Diagrams
-Below is a high-level BPMN diagram representing the end-to-end process for content management in WebJET CMS:
 
-![BPMN](docs/bpmn/webjetcms-content-management.png)
+![BPMN](docs/en/redactor/webpages/pagebuilder.png)
+
+#### BPMN Narrative
+- Content creation and approval
+- Site structure management
+- File upload and asset management
+- Form and survey creation
+- Performance monitoring and reporting
 
 ### 2.2 Detailed Use Cases
 
-**Use Case ID: UC-001: Create Web Page**  
-- **Preconditions**: User is authenticated as Content Editor or Administrator
+**Use Case ID: UC-001: Content Creation**  
+- **Preconditions**: User is authenticated as Editor or Admin  
 - **Steps**:
-  1. Navigate to "Create Page" in CMS dashboard
-  2. Enter page title, content, and metadata
-  3. Select parent node in site structure
-  4. Save page
-  5. Page appears in site tree and is accessible to visitors
-- **Postconditions**: New page is published and visible in site structure
+   1. Navigate to content editor
+   2. Create new page or article
+   3. Add text, images, and media
+   4. Save draft or publish
+- **Postconditions**: Content is saved and visible to viewers if published
 
-**Use Case ID: UC-002: Edit Web Page**  
-- **Preconditions**: Page exists; user has edit permissions
+**Use Case ID: UC-002: Site Structure Management**  
+- **Preconditions**: User is authenticated as Admin  
 - **Steps**:
-  1. Select page from site tree
-  2. Click "Edit"
-  3. Modify content and metadata
-  4. Save changes
-- **Postconditions**: Page is updated and changes are reflected to visitors
+   1. Access site structure tree
+   2. Add, remove, or reorder sections/pages
+   3. Assign permissions
+   4. Save changes
+- **Postconditions**: Site structure updated and permissions enforced
 
-**Use Case ID: UC-003: Upload File**  
-- **Preconditions**: User is authenticated
+**Use Case ID: UC-003: File Upload**  
+- **Preconditions**: User is authenticated  
 - **Steps**:
-  1. Navigate to "Files" section
-  2. Drag and drop or select file to upload
-  3. File is stored and indexed
-- **Postconditions**: File is available for use in content or downloads
+   1. Navigate to file upload interface
+   2. Drag and drop files or select from device
+   3. Confirm upload
+   4. Files are processed and stored
+- **Postconditions**: Files available for use in content or as downloads
 
-**Use Case ID: UC-004: Create Form/Survey**  
-- **Preconditions**: User is authenticated as Editor/Admin
+**Use Case ID: UC-004: Form/Survey Creation**  
+- **Preconditions**: User is authenticated as Editor/Admin  
 - **Steps**:
-  1. Navigate to "Forms & Surveys"
-  2. Select "Create New"
-  3. Define fields and options
-  4. Save and publish form
-- **Postconditions**: Form is available for visitor input
+   1. Access form builder
+   2. Add fields and configure logic
+   3. Save and publish form
+   4. Monitor submissions
+- **Postconditions**: Form is available to users; submissions are stored
 
-**Use Case ID: UC-005: Analyze Web Traffic**  
-- **Preconditions**: Site is live; data is being collected
+**Use Case ID: UC-005: Performance Monitoring**  
+- **Preconditions**: Admin access  
 - **Steps**:
-  1. Access "Statistics" dashboard
-  2. Select desired metrics (visits, page views, etc.)
-  3. View or export reports
-- **Postconditions**: Performance insights are available to administrators
+   1. Access monitoring dashboard
+   2. Review analytics and reports
+   3. Configure alerts or actions
+- **Postconditions**: Performance data available for decision-making
 
 ## 3. Mapping to Code
 ### 3.1 Process-to-Module Traceability
-| Process/Use Case          | Module/Component      | Trace ID |
-|--------------------------|----------------------|----------|
-| Create/Edit Web Page      | web/pages, web/tree  | UC-001/002|
-| Upload File               | web/files            | UC-003   |
-| Create Form/Survey        | web/forms, web/survey| UC-004   |
-| Analyze Web Traffic       | web/statistics       | UC-005   |
+| Process/Use Case         | Module/Package                        | Trace ID |
+|-------------------------|---------------------------------------|----------|
+| Content Creation        | sk.iway.iwcm.editor                   | UC-001   |
+| Site Structure Mgmt     | sk.iway.iwcm.admin, sk.iway.iwcm.admin.jstree | UC-002   |
+| File Upload             | sk.iway.iwcm.admin.upload, sk.iway.iwcm.filebrowser | UC-003   |
+| Form/Survey Creation    | sk.iway.iwcm.components, sk.iway.iwcm.admin | UC-004   |
+| Performance Monitoring  | sk.iway.iwcm.stat                      | UC-005   |
+| User Management         | sk.iway.iwcm.users                     | UC-006   |
+| Integration/API         | sk.iway.webjet.v9, sk.iway.iwcm.common | UC-007   |
 
 ### 3.2 Pain Points
-- Batch jobs for statistics may delay real-time insights
-- Large file uploads may impact performance
-- Site structure changes require manual updates to navigation
-- Customization requires developer intervention for advanced features
+- Legacy batch jobs may cause delays in reporting
+- Manual permission assignment can be error-prone
+- Some admin workflows lack real-time feedback
+- File upload limits and error handling need improvement
 
 ## 4. Modernization Impacts
 ### 4.1 Gaps
-- Lack of real-time analytics dashboard
-- Limited drag-and-drop support in some modules
-- No built-in workflow for content approval
-- API coverage for headless CMS use is incomplete
+- Missing real-time analytics for editors
+- Limited RESTful API endpoints for external integrations
+- UI/UX inconsistencies between legacy and modern modules
+- Lack of granular audit logging for content changes
 
 ### 4.2 Prioritization (MoSCoW)
-| Item                        | MoSCoW | Rationale                                |
-|-----------------------------|--------|------------------------------------------|
-| Real-time analytics         | Must   | Critical for business decision-making     |
-| Content approval workflow   | Should | Enhances governance and quality control  |
-| Improved drag-and-drop      | Could  | Improves editor productivity             |
-| Full REST API coverage      | Must   | Enables integration and modernization    |
-| Automated navigation update | Should | Reduces manual effort                    |
+| Item                        | MoSCoW | Rationale                                   |
+|-----------------------------|--------|---------------------------------------------|
+| Real-time analytics         | Must   | Critical for editorial decision-making      |
+| RESTful API expansion       | Should | Enables broader integrations                |
+| UI/UX unification           | Should | Improves user experience                    |
+| Audit logging               | Could  | Useful for compliance, not immediately critical |
+| Automated permission sync   | Could  | Reduces admin error, but not urgent         |
 
 ## 5. Appendices
 ### A. Process Narratives
-**Content Creation and Publishing**: Editors log in, create content using a WYSIWYG editor, assign it to a site section, and publish. Administrators oversee structure and permissions. Visitors browse published content.
-
-**File Management**: Users upload files for use in content or downloads. Files are indexed and managed via the CMS interface.
-
-**Forms and Surveys**: Editors create forms for feedback, surveys, or data collection. Results are stored and analyzed by administrators.
-
-**Statistics and Monitoring**: Administrators review site performance using built-in analytics tools. Reports inform site improvements and content strategy.
+- **Content Creation**: Editors use a browser-based interface to create, edit, and publish content. Workflow includes draft, review, and publish states. Media assets are managed via drag-and-drop upload and selection dialogs.
+- **Site Structure Management**: Admins organize the site using a tree structure, assigning permissions and configuring navigation. Changes are reflected instantly for users with appropriate access.
+- **File Upload**: Users upload files via a responsive interface. Files are validated, stored, and indexed for use in content or download sections.
+- **Form/Survey Creation**: Editors build forms using a visual builder, configure validation and submission logic, and monitor responses through integrated analytics.
+- **Performance Monitoring**: Admins access dashboards showing site traffic, page load times, and error rates. Alerts can be configured for anomalies.
 
 ### B. RTM to SORD
-| Requirement (RTM)          | SORD Reference         |
-|----------------------------|------------------------|
-| Page creation/editing      | SORD-01                |
-| File management            | SORD-02                |
-| Form/survey functionality  | SORD-03                |
-| Analytics/statistics       | SORD-04                |
+| Requirement (RTM)         | SORD Reference |
+|---------------------------|----------------|
+| Content creation workflow | SORD-UC-001    |
+| Site structure tree       | SORD-UC-002    |
+| File upload               | SORD-UC-003    |
+| Form builder              | SORD-UC-004    |
+| Monitoring dashboard      | SORD-UC-005    |
 
 **Standards Alignment**: ISO/IEC/IEEE 29148:2011 (Requirements engineering), BPMN 2.0.2.
 
-**Traceability**: See SORD, CIAR, and architecture docs for further mapping.
+**Traceability**: See SORD and CIAR documents for requirement mapping and architectural rationale.
